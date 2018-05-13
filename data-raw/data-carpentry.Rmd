@@ -209,7 +209,7 @@ write_rds(municipalities_sf, "data/municipalities_sf.rds")
 
 ```{r}
 crimes_sf <- municipalities_sf %>% 
-  left_join(crimes_df) %>% 
+  left_join(crimes_df) %>%  
   drop_na(date)
 ```
 
