@@ -1,0 +1,55 @@
+ï»¿EventID,Location,Dates,UTC -6,localtimerobbery,Reco_time,weekday,Event,reportnum,Licensee,Lat,Long,distance,Category,Type_IEC,Thesis_grouping,Source,Isotope,Source Activity Ci,Source Activity TBq,Source Activity,Nature of event
+1,"San Nicolas de los Garza, Nuevo Leon",1-Aug-17,22:20:00,16:20:00,1,Tuesday,Theft,2,Universidad Autonoma de Nuevo Leon,25.738078,-100.314769,5.846425533,4,Transport,Theft,Moisture and Density Gauge,"Cs-137
+Am -241",NA,NA,"209 MBq
+1.77 GBq",Stolen moisture/density gauge
+1,"San Nicolas de los Garza, Nuevo Leon",2-Aug-17,02:50:00,20:50:00,1,Wednesday,Recovery,2,Universidad Autonoma de Nuevo Leon,25.78925,-100.304267,5.846425533,4,Transport,Theft,Moisture and Density Gauge,"Cs-137
+Am -241",NA,NA,"209 MBq
+1.77 GBq",Stolen moisture/density gauge
+2,"Ciudad Obregon, Sonora",5-Aug-16,12:37:00,06:39:00,1,Friday,Theft,3,Junta de Caminos del Estado de Sonora,27.470678,-109.9513,0.435668319,4,Other,Theft,Moisture and Density Gauge,"Cs-137
+Am -241 / Be",NA,NA,"370 MBq @ 2005
+1.56 GBq @2005",Theft of a density gauge
+2,"Ciudad Obregon, Sonora",6-Aug-16,02:37:00,19:35:00,1,Saturday,Recovery,3,Junta de Caminos del Estado de Sonora,27.468117,-109.954646,0.435668319,4,Other,Theft,Moisture and Density Gauge,"Cs-137
+Am -241 / Be",NA,NA,"370 MBq @ 2005
+1.56 GBq @2005",Theft of a density gauge
+3,"San Juan del Rio, Queretaro",13-Feb-17,17:30:00,11:30:00,2,Monday,Theft,2,Geogrupo del Centro,20.372431,-99.986772,90.34441376,4,Other,Theft,Density gauge,"Cs-137
+Am -241 / Be",NA,NA,"370 MBq @1994
+1.85 GBq @1994",Theft of a nuclear density gauge
+3,"San Juan del Rio, Queretaro",15-Feb-17,03:15:00,21:15:00,2,Wednesday,Recovery,2,Geogrupo del Centro,20.544176,-100.820252,90.34441376,4,Other,Theft,Density gauge,"Cs-137
+Am -241 / Be",NA,NA,"370 MBq @1994
+1.85 GBq @1994",Theft of a nuclear density gauge
+4,"San Juan del Rio, Queretaro",28-Feb-16,16:00:00,10:00:00,9,Sunday,Theft,2,Mantenimiento Industrial del Centro,20.385547,-99.997367,49.31985855,2,Missing Dangerous Source,Transportation,Industrial Radiography,Ir-192,NA,NA,3.63 TBq @2015,Theft of a pick up truck tranposting an industrial radiography source
+4,"San Juan del Rio, Queretaro",8-Mar-16,22:00:00,16:00:00,9,Tuesday,Recovery,2,Mantenimiento Industrial del Centro,19.958305,-99.893481,49.31985855,2,Missing Dangerous Source,Transportation,Industrial Radiography,Ir-192,NA,NA,3.63 TBq @2015,Theft of a pick up truck tranposting an industrial radiography source
+5,"Cardenas, Tabasco",13-Apr-15,01:00:00,19:00:00,9,Tuesday,Theft,2,Garantía Radiográfica e Ingeniería,17.975206,-93.377222,26.62524796,2,Missing Dangerous Source,Theft,Industrial Radiography,Ir-192,NA,NA,31 Ci,Theft of an Ir-192 industrial radiography source
+5,"Cardenas, Tabasco",22-Apr-15,15:00:00,09:00:00,9,Wednesday,Recovery,2,Garantía Radiográfica e Ingeniería,17.974022,-93.136617,26.62524796,2,Missing Dangerous Source,Theft,Industrial Radiography,Ir-192,NA,NA,31 Ci,Theft of an Ir-192 industrial radiography source
+6,"Atizapan, Mexico State",3-Jul-14,18:00:00,12:00:00,0,Friday,Theft,2,Novo Control,19.592861,-99.249211,9.755068779,2,Other,Transportation,Industrial Radiography,Ir-192,NA,NA,4 TBq @ 2014,Theft of a pick up truck transporting Ir-192 source
+6,"Atizapan, Mexico State",4-Jul-14,17:00:00,13:00:00,0,Friday,Recovery,2,Novo Control,19.515025,-99.209397,9.755068779,2,Other,Transportation,Industrial Radiography,Ir-192,NA,NA,4 TBq @ 2014,Theft of a pick up truck transporting Ir-192 source
+7,"Tultitlan, Mexico State",8-Jun-14,12:00:00,06:00:00,10,Sunday,Theft,2,Laboratorio Nacional de la Construcción,19.623764,-99.154761,7.269090176,4,Malicius act,Theft,Moisture and Density Gauge,"Cs-137
+Am -241 / Be",NA,NA,"370 MBq @2009
+1.85 GBq @2009",Theft of moisture and Density Gauge
+7,"Tultitlan, Mexico State",18-Jun-14,04:00:00,22:00:00,10,Wednesday,Recovery,2,Laboratorio Nacional de la Construcción,19.657638,-99.096904,7.269090176,4,Malicius act,Theft,Moisture and Density Gauge,"Cs-137
+Am -241 / Be",NA,NA,"370 MBq @2009
+1.85 GBq @2009",Theft of moisture and Density Gauge
+8,"Tepojaco, Hidalgo",2-Dec-13,08:00:00,02:00:00,2,Monday,Theft,2,Asesores en Radiaciones,19.834303,-98.941822,15.86487484,1,Missing Dangerous Source,Transportation,Teletherapy,Co-60,NA,NA,457.8 TBq @ 2002,Theft of a vehicle tranposrting a Category 1 Source
+8,"Tepojaco, Hidalgo",4-Dec-13,NA,NA,2,Wednesday,Recovery,2,Asesores en Radiaciones,19.913333,-99.064722,15.86487484,1,Missing Dangerous Source,Transportation,Teletherapy,Co-60,NA,NA,457.8 TBq @ 2002,Theft of a vehicle tranposrting a Category 1 Source
+9,"Tepic, Nayarit",16-Oct-17,16:00:00,10:00:00,2,Monday,Theft,1,Radiografia y ulstrasonido industrial de Veracruz,21.511597,-104.896267,2.077477455,2,Other,Theft,Industrial Radiography,Ir-192,NA,NA,0.0111 TBq,Stolen radiography camara containing a Ir-192 sealed sources
+9,"Tepic, Nayarit",18-Oct-17,00:00:00,18:00:00,2,Wednesday,Recovery,1,Radiografia y ulstrasonido industrial de Veracruz,21.522761,-104.880265,2.077477455,2,Other,Theft,Industrial Radiography,Ir-192,NA,NA,0.0111 TBq,Stolen radiography camara containing a Ir-192 sealed sources
+10,"Ciudad Juarez, Chihuahua",23-Jan-17,22:30:00,16:30:00,1,Monday,Theft,1,LG Laboratorios,31.674892,-106.43785,5.988447189,4,Transport,Transportation,Nuclear densimeter,"Cs-137
+Am -241 / Be",NA,NA,"370 MBq @2000
+1.85 GBq @1999",Robbery of a vehicle transporting a nuclear desimeter
+10,"Ciudad Juarez, Chihuahua",24-Jan-17,07:00:00,01:00:00,1,Tuesday,Recovery,1,LG Laboratorios,31.682553,-106.500247,5.988447189,4,Transport,Transportation,Nuclear densimeter,"Cs-137
+Am -241 / Be",NA,NA,"370 MBq @2000
+1.85 GBq @1999",Robbery of a vehicle transporting a nuclear desimeter
+11,"Tlaquepaque, Jalisco",23-Apr-17,09:00:00,03:00:00,NA,Sunday,Theft,1,Tecnología No Destructiva,20.570083,-103.346128,NA,2,Transport,Transportation,Industrial Radiography,Ir-192,NA,NA,3.85 TBq @ 2017,Theft of a vehicle transporting an industrial radiography device
+11,"Tlaquepaque, Jalisco",NA,NA,NA,NA,Saturday,Recovery,1,Tecnología No Destructiva,NA,NA,NA,2,Transport,Transportation,Industrial Radiography,Ir-192,NA,NA,NA,Theft of a vehicle transporting an industrial radiography device
+12,Mexico-Guatemala border,19-May-16,01:40:00,19:40:00,6,Thursday,Theft,1,Ministerio de Minas,14.544275,-91.552167,NA,NA,Other,Theft,NA,I-131,NA,NA,NA,Theft with violence (description information)
+12,Mexico-Guatemala border,25-May-16,02:00:00,20:00:00,6,Wednesday,Recovery,1,Ministerio de Minas,NA,NA,NA,NA,Other,Theft,NA,I-131,NA,NA,NA,Theft with violence (description information)
+13,"Salamanca, Guanajuato",3-Feb-15,06:00:00,00:00:00,0,Tuesday,Theft,1,Servicios Especiales de Inspección y Pruebas del Noreste,20.573931,-101.195717,249.145752,2,Missing Dangerous Source,Insider,Industrial Radiography,"Ir-192 
+(3 sources)",NA,NA,"4 TBq @ 2014
+(each)",Theft of three Iridium-192 Industrial Radiograhy sources
+13,"Salamanca, Guanajuato",3-Feb-15,01:00:00,17:00:00,0,Tuesday,Recovery,1,Servicios Especiales de Inspección y Pruebas del Noreste,19.841044,-98.981228,249.145752,2,Missing Dangerous Source,Insider,Industrial Radiography,"Ir-192 
+(3 sources)",NA,NA,"4 TBq @ 2014
+(each)",Theft of three Iridium-192 Industrial Radiograhy sources
+14,"Leon, Guanajuato",8-Feb-18,15:00:00,09:00:00,2,Thursday,Theft,2,Geogrupo del Centro,20.959813,-101.576092,4.3,4,Other,Theft,Moisture and Density Gauge,"Cs-137
+Am -241 / Be",NA,NA,252 MBq / 1.79 GBq,Theft of a Stolen Moisture/Density Gauge
+14,"Leon, Guanajuato",10-Feb-18,22:00:00,10:00:00,2,Saturday,Recovery,2,Geogrupo del Centro,20.943403,-101.613458,4.3,4,Other,Theft,Moisture and Density Gauge,"Cs-137
+Am -241 / Be",NA,NA,252 MBq / 1.79 GBq,Theft of a Stolen Moisture/Density Gauge
