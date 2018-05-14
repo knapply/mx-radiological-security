@@ -11,10 +11,15 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
 ```
 
 ```{r}
+library(raster)
 library(tidyverse)
 library(sf)
 library(geojsonio)
 library(mxmaps)
+library(fasterize)
+library(rasterVis)
+library(magick)
+library(gtools)
 library(lubridate)
 library(knitr)
 ```
@@ -249,6 +254,109 @@ crimes_for_plot %>%
 ```{r}
 write_rds(crimes_sf, "data/crimes_sf.rds")
 ```
+
+```{r}
+rm(municipalities_sf, demographics_df)
+gc()
+```
+
+# Spatiotemporal Crimes
+
+```{r}
+floored_crimes <- crimes_sf %>% 
+  mutate(date = floor_date(date, "4 months")) %>% 
+  st_transform(3857) %>% 
+  st_buffer(0) %>% 
+  group_by(date, INEGI) %>% 
+  summarise(count = sum(count)) %>% 
+  st_cast("MULTIPOLYGON") %>% 
+  ungroup() %>% 
+  as_tibble() %>% 
+  st_as_sf()
+```
+
+```{r}
+rm(crimes_sf)
+gc()
+```
+
+
+```{r}
+cust_fasterize <- function(filter_date, sf){
+  init_sf <- sf %>% 
+    filter(date == filter_date)
+  init_rast <- raster(sf, res = 175)
+  gc()
+  fasterize(init_sf, init_rast, field = "count", fun = "sum")
+}
+
+crimes_brick <- floored_crimes %>%
+  `st_geometry<-`(NULL) %>% 
+  distinct(date) %>% 
+  arrange(date) %>% 
+  pull(date) %>% 
+  map(cust_fasterize, floored_crimes) %>% 
+  brick() %>% 
+  raster::calc(function(x) log10(x)) %>% 
+  `names<-`(floored_crimes$date %>% 
+                     unique() %>% 
+                     sort()
+            )
+```
+
+```{r}
+cust_theme <- rasterTheme(region = rev(brewer.pal(9, "RdYlBu")))
+
+plot_titles <- names(crimes_brick) %>% 
+  str_remove("X") %>% 
+  str_replace_all("\\.", "-") %>% 
+  str_glue("{date}\nHighway Robberies and Vehicle Thefts", date = .)
+
+
+png(file = "figs/mx-crimes%02d.png", width = 1600, height = 1200)
+
+for(i in seq_along(1:nlayers(crimes_brick))){
+  plotted <- levelplot(crimes_brick[[i]],
+                       par.settings = cust_theme,
+                       scales = list(x = list(at = NULL), y = list(at = NULL)),
+                       main = list(plot_titles[[i]], cex = 2),
+                       maxpixels = 1600 * 1200
+                       )
+  print(plotted)
+  grid::grid.text(expression(paste(log[10], (n[Crimes]))),
+                  just = "center",
+                  gp = grid::gpar(fontsize = 20),
+                  y = unit(0.05, "npc"), 
+                  x = unit(0.51, "npc"))
+}
+dev.off()
+
+png_files <- list.files("figs", pattern = "mx-crimes\\d{2}.png", 
+                        full.names = T) %>% 
+  gtools::mixedsort() %>% 
+  map(image_read)
+
+png_files %>%
+  image_join() %>%
+  image_animate(fps = nlayers(crimes_brick) / 12) %>%
+  image_write("figs/mx-crimes.gif") 
+```
+
+```{r}
+list.files("figs", pattern = "mx-crimes\\d{2}.png", full.names = TRUE) %>% 
+  file.remove()
+```
+
+```{r echo=FALSE}
+message(list.files("figs", full.names = TRUE))
+```
+
+
+```{r}
+include_graphics("https://raw.githubusercontent.com/syknapptic/mx-radiological-security/master/figs/mx-crimes.gif")
+```
+
+
 
 # Reproducibility
 

@@ -2,10 +2,15 @@ Data Carpentry
 ================
 
 ``` r
+library(raster)
 library(tidyverse)
 library(sf)
 library(geojsonio)
 library(mxmaps)
+library(fasterize)
+library(rasterVis)
+library(magick)
+library(gtools)
 library(lubridate)
 library(knitr)
 ```
@@ -267,7 +272,7 @@ Crime Geometries
 
 ``` r
 crimes_sf <- municipalities_sf %>% 
-  left_join(crimes_df) %>% 
+  left_join(crimes_df) %>%  
   drop_na(date)
 ```
 
@@ -310,6 +315,119 @@ crimes_for_plot %>%
 write_rds(crimes_sf, "data/crimes_sf.rds")
 ```
 
+``` r
+rm(municipalities_sf, demographics_df)
+gc()
+```
+
+    ##           used  (Mb) gc trigger   (Mb)  max used   (Mb)
+    ## Ncells 2633488 140.7    7383828  394.4   7383828  394.4
+    ## Vcells 5745291  43.9  156101148 1191.0 313589781 2392.6
+
+Spatiotemporal Crimes
+=====================
+
+``` r
+floored_crimes <- crimes_sf %>% 
+  mutate(date = floor_date(date, "4 months")) %>% 
+  st_transform(3857) %>% 
+  st_buffer(0) %>% 
+  group_by(date, INEGI) %>% 
+  summarise(count = sum(count)) %>% 
+  st_cast("MULTIPOLYGON") %>% 
+  ungroup() %>% 
+  as_tibble() %>% 
+  st_as_sf()
+```
+
+``` r
+rm(crimes_sf)
+gc()
+```
+
+    ##           used  (Mb) gc trigger  (Mb)  max used   (Mb)
+    ## Ncells 2710858 144.8    7383828 394.4   7383828  394.4
+    ## Vcells 6748787  51.5  124880918 952.8 313589781 2392.6
+
+``` r
+cust_fasterize <- function(filter_date, sf){
+  init_sf <- sf %>% 
+    filter(date == filter_date)
+  init_rast <- raster(sf, res = 175)
+  gc()
+  fasterize(init_sf, init_rast, field = "count", fun = "sum")
+}
+
+crimes_brick <- floored_crimes %>%
+  `st_geometry<-`(NULL) %>% 
+  distinct(date) %>% 
+  arrange(date) %>% 
+  pull(date) %>% 
+  map(cust_fasterize, floored_crimes) %>% 
+  brick() %>% 
+  raster::calc(function(x) log10(x)) %>% 
+  `names<-`(floored_crimes$date %>% 
+                     unique() %>% 
+                     sort()
+            )
+```
+
+``` r
+cust_theme <- rasterTheme(region = rev(brewer.pal(9, "RdYlBu")))
+
+plot_titles <- names(crimes_brick) %>% 
+  str_remove("X") %>% 
+  str_replace_all("\\.", "-") %>% 
+  str_glue("{date}\nHighway Robberies and Vehicle Thefts", date = .)
+
+
+png(file = "figs/mx-crimes%02d.png", width = 1600, height = 1200)
+
+for(i in seq_along(1:nlayers(crimes_brick))){
+  plotted <- levelplot(crimes_brick[[i]],
+                       par.settings = cust_theme,
+                       scales = list(x = list(at = NULL), y = list(at = NULL)),
+                       main = list(plot_titles[[i]], cex = 2),
+                       maxpixels = 1600 * 1200
+                       )
+  print(plotted)
+  grid::grid.text(expression(paste(log[10], (n[Crimes]))),
+                  just = "center",
+                  gp = grid::gpar(fontsize = 20),
+                  y = unit(0.05, "npc"), 
+                  x = unit(0.51, "npc"))
+}
+dev.off()
+```
+
+    ## png 
+    ##   2
+
+``` r
+png_files <- list.files("figs", pattern = "mx-crimes\\d{2}.png", 
+                        full.names = T) %>% 
+  gtools::mixedsort() %>% 
+  map(image_read)
+
+png_files %>%
+  image_join() %>%
+  image_animate(fps = nlayers(crimes_brick) / 12) %>%
+  image_write("figs/mx-crimes.gif") 
+```
+
+``` r
+list.files("figs", pattern = "mx-crimes\\d{2}.png", full.names = TRUE) %>% 
+  file.remove()
+```
+
+    ##  [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+
+``` r
+include_graphics("https://raw.githubusercontent.com/syknapptic/mx-radiological-security/master/figs/mx-crimes.gif")
+```
+
+<img src="https://raw.githubusercontent.com/syknapptic/mx-radiological-security/master/figs/mx-crimes.gif"  />
+
 Reproducibility
 ===============
 
@@ -338,7 +456,7 @@ sess_info$platform %>%
 | language | (EN)                         |
 | collate  | English\_United States.1252  |
 | tz       | America/Los\_Angeles         |
-| date     | 2018-05-13                   |
+| date     | 2018-05-14                   |
 
 Packages
 --------
@@ -348,109 +466,117 @@ sess_info$packages %>%
   kable()
 ```
 
-| package      | \*  | version    | date       | source                                 |
-|:-------------|:----|:-----------|:-----------|:---------------------------------------|
-| assertthat   |     | 0.2.0      | 2017-04-11 | CRAN (R 3.5.0)                         |
-| backports    |     | 1.1.2      | 2017-12-13 | CRAN (R 3.5.0)                         |
-| base         | \*  | 3.5.0      | 2018-04-23 | local                                  |
-| bindr        |     | 0.1.1      | 2018-03-13 | CRAN (R 3.5.0)                         |
-| bindrcpp     | \*  | 0.2.2      | 2018-03-29 | CRAN (R 3.5.0)                         |
-| broom        |     | 0.4.4      | 2018-03-29 | CRAN (R 3.5.0)                         |
-| cellranger   |     | 1.1.0      | 2016-07-27 | CRAN (R 3.5.0)                         |
-| class        |     | 7.3-14     | 2015-08-30 | CRAN (R 3.5.0)                         |
-| classInt     |     | 0.2-3      | 2018-04-16 | CRAN (R 3.5.0)                         |
-| cli          |     | 1.0.0      | 2017-11-05 | CRAN (R 3.5.0)                         |
-| colorspace   |     | 1.3-2      | 2016-12-14 | CRAN (R 3.5.0)                         |
-| compiler     |     | 3.5.0      | 2018-04-23 | local                                  |
-| crayon       |     | 1.3.4      | 2017-09-16 | CRAN (R 3.5.0)                         |
-| crosstalk    |     | 1.0.0      | 2016-12-21 | CRAN (R 3.5.0)                         |
-| curl         |     | 3.2        | 2018-03-28 | CRAN (R 3.5.0)                         |
-| datasets     | \*  | 3.5.0      | 2018-04-23 | local                                  |
-| DBI          |     | 1.0.0      | 2018-05-02 | CRAN (R 3.5.0)                         |
-| devtools     |     | 1.13.5     | 2018-02-18 | CRAN (R 3.5.0)                         |
-| digest       |     | 0.6.15     | 2018-01-28 | CRAN (R 3.5.0)                         |
-| dplyr        | \*  | 0.7.4      | 2017-09-28 | CRAN (R 3.5.0)                         |
-| e1071        |     | 1.6-8      | 2017-02-02 | CRAN (R 3.5.0)                         |
-| evaluate     |     | 0.10.1     | 2017-06-24 | CRAN (R 3.5.0)                         |
-| forcats      | \*  | 0.3.0      | 2018-02-19 | CRAN (R 3.5.0)                         |
-| foreign      |     | 0.8-70     | 2017-11-28 | CRAN (R 3.5.0)                         |
-| geojson      |     | 0.2.0      | 2017-11-08 | CRAN (R 3.5.0)                         |
-| geojsonio    | \*  | 0.6.0      | 2018-03-30 | CRAN (R 3.5.0)                         |
-| ggplot2      | \*  | 2.2.1.9000 | 2018-05-11 | Github (<thomasp85/ggplot2@dfa0bc3>)   |
-| glue         |     | 1.2.0      | 2017-10-29 | CRAN (R 3.5.0)                         |
-| graphics     | \*  | 3.5.0      | 2018-04-23 | local                                  |
-| grDevices    | \*  | 3.5.0      | 2018-04-23 | local                                  |
-| grid         |     | 3.5.0      | 2018-04-23 | local                                  |
-| gtable       |     | 0.2.0      | 2016-02-26 | CRAN (R 3.5.0)                         |
-| haven        |     | 1.1.1      | 2018-01-18 | CRAN (R 3.5.0)                         |
-| highr        |     | 0.6        | 2016-05-09 | CRAN (R 3.5.0)                         |
-| hms          |     | 0.4.2      | 2018-03-10 | CRAN (R 3.5.0)                         |
-| htmltools    |     | 0.3.6      | 2017-04-28 | CRAN (R 3.5.0)                         |
-| htmlwidgets  |     | 1.2        | 2018-04-19 | CRAN (R 3.5.0)                         |
-| httpuv       |     | 1.4.2      | 2018-05-03 | CRAN (R 3.5.0)                         |
-| httr         |     | 1.3.1      | 2017-08-20 | CRAN (R 3.5.0)                         |
-| inegiR       |     | 2.0.0      | 2018-03-30 | CRAN (R 3.5.0)                         |
-| jqr          |     | 1.0.0      | 2017-09-28 | CRAN (R 3.5.0)                         |
-| jsonlite     |     | 1.5        | 2017-06-01 | CRAN (R 3.5.0)                         |
-| knitr        | \*  | 1.20.2     | 2018-04-28 | local                                  |
-| later        |     | 0.7.2      | 2018-05-01 | CRAN (R 3.5.0)                         |
-| lattice      |     | 0.20-35    | 2017-03-25 | CRAN (R 3.5.0)                         |
-| lazyeval     |     | 0.2.1      | 2017-10-29 | CRAN (R 3.5.0)                         |
-| leaflet      |     | 2.0.0.9000 | 2018-05-13 | Github (<rstudio/leaflet@c2f386f>)     |
-| lubridate    | \*  | 1.7.4      | 2018-04-11 | CRAN (R 3.5.0)                         |
-| magrittr     |     | 1.5        | 2014-11-22 | CRAN (R 3.5.0)                         |
-| maps         |     | 3.3.0      | 2018-04-03 | CRAN (R 3.5.0)                         |
-| maptools     |     | 0.9-2      | 2017-03-25 | CRAN (R 3.5.0)                         |
-| memoise      |     | 1.1.0      | 2017-04-21 | CRAN (R 3.5.0)                         |
-| methods      | \*  | 3.5.0      | 2018-04-23 | local                                  |
-| mime         |     | 0.5        | 2016-07-07 | CRAN (R 3.5.0)                         |
-| mnormt       |     | 1.5-5      | 2016-10-15 | CRAN (R 3.5.0)                         |
-| modelr       |     | 0.1.1      | 2017-07-24 | CRAN (R 3.5.0)                         |
-| munsell      |     | 0.4.3      | 2016-02-13 | CRAN (R 3.5.0)                         |
-| mxmaps       | \*  | 0.5.2      | 2018-05-07 | Github (<diegovalle/mxmaps@5610912>)   |
-| nlme         |     | 3.1-137    | 2018-04-07 | CRAN (R 3.5.0)                         |
-| parallel     |     | 3.5.0      | 2018-04-23 | local                                  |
-| pillar       |     | 1.2.2      | 2018-04-26 | CRAN (R 3.5.0)                         |
-| pkgconfig    |     | 2.0.1      | 2017-03-21 | CRAN (R 3.5.0)                         |
-| plyr         |     | 1.8.4      | 2016-06-08 | CRAN (R 3.5.0)                         |
-| promises     |     | 1.0.1      | 2018-04-13 | CRAN (R 3.5.0)                         |
-| psych        |     | 1.8.4      | 2018-05-06 | CRAN (R 3.5.0)                         |
-| purrr        | \*  | 0.2.4      | 2017-10-18 | CRAN (R 3.5.0)                         |
-| R6           |     | 2.2.2      | 2017-06-17 | CRAN (R 3.5.0)                         |
-| RColorBrewer |     | 1.1-2      | 2014-12-07 | CRAN (R 3.5.0)                         |
-| Rcpp         |     | 0.12.16    | 2018-03-13 | CRAN (R 3.5.0)                         |
-| readr        | \*  | 1.1.1      | 2017-05-16 | CRAN (R 3.5.0)                         |
-| readxl       |     | 1.1.0      | 2018-04-20 | CRAN (R 3.5.0)                         |
-| reshape2     |     | 1.4.3      | 2017-12-11 | CRAN (R 3.5.0)                         |
-| rgdal        |     | 1.2-20     | 2018-05-07 | CRAN (R 3.5.0)                         |
-| rgeos        |     | 0.3-26     | 2017-10-31 | CRAN (R 3.5.0)                         |
-| RJSONIO      |     | 1.3-0      | 2014-07-28 | CRAN (R 3.5.0)                         |
-| rlang        |     | 0.2.0.9001 | 2018-05-11 | Github (<r-lib/rlang@ccdbd8b>)         |
-| rmarkdown    |     | 1.9        | 2018-03-01 | CRAN (R 3.5.0)                         |
-| RPostgreSQL  |     | 0.6-2      | 2017-06-24 | CRAN (R 3.5.0)                         |
-| rprojroot    |     | 1.3-2      | 2018-01-03 | CRAN (R 3.5.0)                         |
-| rstudioapi   |     | 0.7        | 2017-09-07 | CRAN (R 3.5.0)                         |
-| rvest        |     | 0.3.2      | 2016-06-17 | CRAN (R 3.5.0)                         |
-| scales       |     | 0.5.0.9000 | 2018-05-07 | Github (<hadley/scales@d767915>)       |
-| sf           | \*  | 0.6-3      | 2018-05-10 | Github (<r-spatial/sf@27c4fda>)        |
-| shiny        |     | 1.0.5      | 2017-08-23 | CRAN (R 3.5.0)                         |
-| sp           |     | 1.2-7      | 2018-01-19 | CRAN (R 3.5.0)                         |
-| spData       |     | 0.2.8.3    | 2018-03-25 | CRAN (R 3.5.0)                         |
-| stats        | \*  | 3.5.0      | 2018-04-23 | local                                  |
-| stringi      |     | 1.2.2      | 2018-05-02 | CRAN (R 3.5.0)                         |
-| stringr      | \*  | 1.3.0      | 2018-02-19 | CRAN (R 3.5.0)                         |
-| tibble       | \*  | 1.4.2      | 2018-01-22 | CRAN (R 3.5.0)                         |
-| tidyr        | \*  | 0.8.0      | 2018-01-29 | CRAN (R 3.5.0)                         |
-| tidyselect   |     | 0.2.4      | 2018-02-26 | CRAN (R 3.5.0)                         |
-| tidyverse    | \*  | 1.2.1.9000 | 2018-05-07 | Github (<tidyverse/tidyverse@83f6ec3>) |
-| tools        |     | 3.5.0      | 2018-04-23 | local                                  |
-| udunits2     |     | 0.13       | 2016-11-17 | CRAN (R 3.5.0)                         |
-| units        |     | 0.5-1      | 2018-01-08 | CRAN (R 3.5.0)                         |
-| utils        | \*  | 3.5.0      | 2018-04-23 | local                                  |
-| V8           |     | 1.5        | 2017-04-25 | CRAN (R 3.5.0)                         |
-| withr        |     | 2.1.2      | 2018-04-30 | Github (<jimhester/withr@79d7b0d>)     |
-| XML          |     | 3.98-1.11  | 2018-04-16 | CRAN (R 3.5.0)                         |
-| xml2         |     | 1.2.0      | 2018-01-24 | CRAN (R 3.5.0)                         |
-| xtable       |     | 1.8-2      | 2016-02-05 | CRAN (R 3.5.0)                         |
-| yaml         |     | 2.1.19     | 2018-05-01 | CRAN (R 3.5.0)                         |
-| zoo          |     | 1.8-1      | 2018-01-08 | CRAN (R 3.5.0)                         |
+| package      | \*  | version    | date       | source                                         |
+|:-------------|:----|:-----------|:-----------|:-----------------------------------------------|
+| assertthat   |     | 0.2.0      | 2017-04-11 | CRAN (R 3.5.0)                                 |
+| backports    |     | 1.1.2      | 2017-12-13 | CRAN (R 3.5.0)                                 |
+| base         | \*  | 3.5.0      | 2018-04-23 | local                                          |
+| bindr        |     | 0.1.1      | 2018-03-13 | CRAN (R 3.5.0)                                 |
+| bindrcpp     | \*  | 0.2.2      | 2018-03-29 | CRAN (R 3.5.0)                                 |
+| broom        |     | 0.4.4      | 2018-03-29 | CRAN (R 3.5.0)                                 |
+| cellranger   |     | 1.1.0      | 2016-07-27 | CRAN (R 3.5.0)                                 |
+| class        |     | 7.3-14     | 2015-08-30 | CRAN (R 3.5.0)                                 |
+| classInt     |     | 0.2-3      | 2018-04-16 | CRAN (R 3.5.0)                                 |
+| cli          |     | 1.0.0      | 2017-11-05 | CRAN (R 3.5.0)                                 |
+| colorspace   |     | 1.3-2      | 2016-12-14 | CRAN (R 3.5.0)                                 |
+| compiler     |     | 3.5.0      | 2018-04-23 | local                                          |
+| crayon       |     | 1.3.4      | 2017-09-16 | CRAN (R 3.5.0)                                 |
+| crosstalk    |     | 1.0.0      | 2016-12-21 | CRAN (R 3.5.0)                                 |
+| curl         |     | 3.2        | 2018-03-28 | CRAN (R 3.5.0)                                 |
+| datasets     | \*  | 3.5.0      | 2018-04-23 | local                                          |
+| DBI          |     | 1.0.0      | 2018-05-02 | CRAN (R 3.5.0)                                 |
+| devtools     |     | 1.13.5     | 2018-02-18 | CRAN (R 3.5.0)                                 |
+| digest       |     | 0.6.15     | 2018-01-28 | CRAN (R 3.5.0)                                 |
+| dplyr        | \*  | 0.7.4      | 2017-09-28 | CRAN (R 3.5.0)                                 |
+| e1071        |     | 1.6-8      | 2017-02-02 | CRAN (R 3.5.0)                                 |
+| evaluate     |     | 0.10.1     | 2017-06-24 | CRAN (R 3.5.0)                                 |
+| fasterize    | \*  | 1.0.1      | 2018-05-13 | Github (<ecohealthalliance/fasterize@5a9f0a1>) |
+| forcats      | \*  | 0.3.0      | 2018-02-19 | CRAN (R 3.5.0)                                 |
+| foreign      |     | 0.8-70     | 2017-11-28 | CRAN (R 3.5.0)                                 |
+| geojson      |     | 0.2.0      | 2017-11-08 | CRAN (R 3.5.0)                                 |
+| geojsonio    | \*  | 0.6.0      | 2018-03-30 | CRAN (R 3.5.0)                                 |
+| ggplot2      | \*  | 2.2.1.9000 | 2018-05-11 | Github (<thomasp85/ggplot2@dfa0bc3>)           |
+| glue         |     | 1.2.0      | 2017-10-29 | CRAN (R 3.5.0)                                 |
+| graphics     | \*  | 3.5.0      | 2018-04-23 | local                                          |
+| grDevices    | \*  | 3.5.0      | 2018-04-23 | local                                          |
+| grid         |     | 3.5.0      | 2018-04-23 | local                                          |
+| gtable       |     | 0.2.0      | 2016-02-26 | CRAN (R 3.5.0)                                 |
+| gtools       | \*  | 3.5.0      | 2015-05-29 | CRAN (R 3.5.0)                                 |
+| haven        |     | 1.1.1      | 2018-01-18 | CRAN (R 3.5.0)                                 |
+| hexbin       |     | 1.27.2     | 2018-01-15 | CRAN (R 3.5.0)                                 |
+| highr        |     | 0.6        | 2016-05-09 | CRAN (R 3.5.0)                                 |
+| hms          |     | 0.4.2      | 2018-03-10 | CRAN (R 3.5.0)                                 |
+| htmltools    |     | 0.3.6      | 2017-04-28 | CRAN (R 3.5.0)                                 |
+| htmlwidgets  |     | 1.2        | 2018-04-19 | CRAN (R 3.5.0)                                 |
+| httpuv       |     | 1.4.2      | 2018-05-03 | CRAN (R 3.5.0)                                 |
+| httr         |     | 1.3.1      | 2017-08-20 | CRAN (R 3.5.0)                                 |
+| inegiR       |     | 2.0.0      | 2018-03-30 | CRAN (R 3.5.0)                                 |
+| jqr          |     | 1.0.0      | 2017-09-28 | CRAN (R 3.5.0)                                 |
+| jsonlite     |     | 1.5        | 2017-06-01 | CRAN (R 3.5.0)                                 |
+| knitr        | \*  | 1.20.2     | 2018-04-28 | local                                          |
+| later        |     | 0.7.2      | 2018-05-01 | CRAN (R 3.5.0)                                 |
+| lattice      | \*  | 0.20-35    | 2017-03-25 | CRAN (R 3.5.0)                                 |
+| latticeExtra | \*  | 0.6-28     | 2016-02-09 | CRAN (R 3.5.0)                                 |
+| lazyeval     |     | 0.2.1      | 2017-10-29 | CRAN (R 3.5.0)                                 |
+| leaflet      |     | 2.0.0.9000 | 2018-05-13 | Github (<rstudio/leaflet@c2f386f>)             |
+| lubridate    | \*  | 1.7.4      | 2018-04-11 | CRAN (R 3.5.0)                                 |
+| magick       | \*  | 1.8        | 2018-03-19 | CRAN (R 3.5.0)                                 |
+| magrittr     |     | 1.5        | 2014-11-22 | CRAN (R 3.5.0)                                 |
+| maps         |     | 3.3.0      | 2018-04-03 | CRAN (R 3.5.0)                                 |
+| maptools     |     | 0.9-2      | 2017-03-25 | CRAN (R 3.5.0)                                 |
+| memoise      |     | 1.1.0      | 2017-04-21 | CRAN (R 3.5.0)                                 |
+| methods      | \*  | 3.5.0      | 2018-04-23 | local                                          |
+| mime         |     | 0.5        | 2016-07-07 | CRAN (R 3.5.0)                                 |
+| mnormt       |     | 1.5-5      | 2016-10-15 | CRAN (R 3.5.0)                                 |
+| modelr       |     | 0.1.1      | 2017-07-24 | CRAN (R 3.5.0)                                 |
+| munsell      |     | 0.4.3      | 2016-02-13 | CRAN (R 3.5.0)                                 |
+| mxmaps       | \*  | 0.5.2      | 2018-05-07 | Github (<diegovalle/mxmaps@5610912>)           |
+| nlme         |     | 3.1-137    | 2018-04-07 | CRAN (R 3.5.0)                                 |
+| parallel     |     | 3.5.0      | 2018-04-23 | local                                          |
+| pillar       |     | 1.2.2      | 2018-04-26 | CRAN (R 3.5.0)                                 |
+| pkgconfig    |     | 2.0.1      | 2017-03-21 | CRAN (R 3.5.0)                                 |
+| plyr         |     | 1.8.4      | 2016-06-08 | CRAN (R 3.5.0)                                 |
+| promises     |     | 1.0.1      | 2018-04-13 | CRAN (R 3.5.0)                                 |
+| psych        |     | 1.8.4      | 2018-05-06 | CRAN (R 3.5.0)                                 |
+| purrr        | \*  | 0.2.4      | 2017-10-18 | CRAN (R 3.5.0)                                 |
+| R6           |     | 2.2.2      | 2017-06-17 | CRAN (R 3.5.0)                                 |
+| raster       | \*  | 2.6-7      | 2017-11-13 | CRAN (R 3.5.0)                                 |
+| rasterVis    | \*  | 0.44       | 2018-04-05 | CRAN (R 3.5.0)                                 |
+| RColorBrewer | \*  | 1.1-2      | 2014-12-07 | CRAN (R 3.5.0)                                 |
+| Rcpp         |     | 0.12.16    | 2018-03-13 | CRAN (R 3.5.0)                                 |
+| readr        | \*  | 1.1.1      | 2017-05-16 | CRAN (R 3.5.0)                                 |
+| readxl       |     | 1.1.0      | 2018-04-20 | CRAN (R 3.5.0)                                 |
+| reshape2     |     | 1.4.3      | 2017-12-11 | CRAN (R 3.5.0)                                 |
+| rgdal        |     | 1.2-20     | 2018-05-07 | CRAN (R 3.5.0)                                 |
+| rgeos        |     | 0.3-26     | 2017-10-31 | CRAN (R 3.5.0)                                 |
+| RJSONIO      |     | 1.3-0      | 2014-07-28 | CRAN (R 3.5.0)                                 |
+| rlang        |     | 0.2.0.9001 | 2018-05-11 | Github (<r-lib/rlang@ccdbd8b>)                 |
+| rmarkdown    |     | 1.9        | 2018-03-01 | CRAN (R 3.5.0)                                 |
+| RPostgreSQL  |     | 0.6-2      | 2017-06-24 | CRAN (R 3.5.0)                                 |
+| rprojroot    |     | 1.3-2      | 2018-01-03 | CRAN (R 3.5.0)                                 |
+| rstudioapi   |     | 0.7        | 2017-09-07 | CRAN (R 3.5.0)                                 |
+| rvest        |     | 0.3.2      | 2016-06-17 | CRAN (R 3.5.0)                                 |
+| scales       |     | 0.5.0.9000 | 2018-05-07 | Github (<hadley/scales@d767915>)               |
+| sf           | \*  | 0.6-3      | 2018-05-10 | Github (<r-spatial/sf@27c4fda>)                |
+| shiny        |     | 1.0.5      | 2017-08-23 | CRAN (R 3.5.0)                                 |
+| sp           | \*  | 1.2-7      | 2018-01-19 | CRAN (R 3.5.0)                                 |
+| spData       |     | 0.2.8.3    | 2018-03-25 | CRAN (R 3.5.0)                                 |
+| stats        | \*  | 3.5.0      | 2018-04-23 | local                                          |
+| stringi      |     | 1.2.2      | 2018-05-02 | CRAN (R 3.5.0)                                 |
+| stringr      | \*  | 1.3.0      | 2018-02-19 | CRAN (R 3.5.0)                                 |
+| tibble       | \*  | 1.4.2      | 2018-01-22 | CRAN (R 3.5.0)                                 |
+| tidyr        | \*  | 0.8.0      | 2018-01-29 | CRAN (R 3.5.0)                                 |
+| tidyselect   |     | 0.2.4      | 2018-02-26 | CRAN (R 3.5.0)                                 |
+| tidyverse    | \*  | 1.2.1.9000 | 2018-05-07 | Github (<tidyverse/tidyverse@83f6ec3>)         |
+| tools        |     | 3.5.0      | 2018-04-23 | local                                          |
+| udunits2     |     | 0.13       | 2016-11-17 | CRAN (R 3.5.0)                                 |
+| units        |     | 0.5-1      | 2018-01-08 | CRAN (R 3.5.0)                                 |
+| utils        | \*  | 3.5.0      | 2018-04-23 | local                                          |
+| V8           |     | 1.5        | 2017-04-25 | CRAN (R 3.5.0)                                 |
+| viridisLite  |     | 0.3.0      | 2018-02-01 | CRAN (R 3.5.0)                                 |
+| withr        |     | 2.1.2      | 2018-04-30 | Github (<jimhester/withr@79d7b0d>)             |
+| XML          |     | 3.98-1.11  | 2018-04-16 | CRAN (R 3.5.0)                                 |
+| xml2         |     | 1.2.0      | 2018-01-24 | CRAN (R 3.5.0)                                 |
+| xtable       |     | 1.8-2      | 2016-02-05 | CRAN (R 3.5.0)                                 |
+| yaml         |     | 2.1.19     | 2018-05-01 | CRAN (R 3.5.0)                                 |
+| zoo          |     | 1.8-1      | 2018-01-08 | CRAN (R 3.5.0)                                 |
